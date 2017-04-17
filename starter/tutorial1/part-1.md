@@ -74,3 +74,87 @@ public @interface Profile {
 
 ![](images/uml.png)
 
+Spring Boot有很多开箱即用的 condition 可供选择：
+
+| Condition | 描述 |
+|--------|--------|
+|    OnBeanCondition    |    检查 bean 是否存在于 spring factory 中    |
+|    OnClassCondition    |    检查类是否在 classpath 中    |
+|    OnExpressionCondition    |    执行  SPeL 表达式   |
+|   OnJavaCondition     |    检查 Java 版本    |
+|    OnJndiCondition    |    检查 JNDI 分支是否存在    |
+|    OnPropertyCondition    |    检查 property 是否存在    |
+|    OnResourceCondition    |    检查 resource 是否存在   |
+|    OnWebApplicationCondition    |    检查 WebApplicationContext 是否存在   |
+
+这些可以用来组合 boolean `condition` ：
+
+| Condition | 描述 |
+|--------|--------|
+|    AllNestedConditions    |    AND 操作    |
+|    AnyNestedConditions    |    OR 操作    |
+|    NoneNestedCondition    |    NOT 操作    |
+
+专用的 `@Conditional` 注解指向这些注解。 例如，`@ConditionalOnMissingBean` 指向 `OnBeanCondition` 类。
+
+## 实验时间
+
+我们来创建一个使用 `@Configuration` 注解的配置类。
+
+以下方法将在所有情况下运行：
+
+```java
+@Bean
+public String string() {
+    return "string()";
+}
+```
+
+这个不会，因为 `java.lang.String` 是 Java API 的一部分：
+
+```java
+@Bean
+@ConditionalOnMissingClass("java.lang.String")
+public String missingClassString() {
+    return "missingClassString()";
+}
+```
+
+同样的理由，这个会：
+
+```java
+@Bean
+@ConditionalOnClass(String.class)
+public String classString() {
+    return "classString()";
+}
+```
+
+## 上面配置的分析
+
+掌握这个新知识后，我们来分析上面的 `JpaRepositoriesAutoConfiguration` 类。
+
+且仅当满足所有条件时才启用此配置：
+
+- @ConditionalOnBean（DataSource.class）
+
+    在Spring上下文中有一个 `DataSource` 类型的 bean
+
+- @ConditionalOnClass（JpaRepository.class）
+
+    `JpaRepository` 类在类路径上，即项目对 Spring Data JPA 有依赖关系
+
+- @ConditionalOnMissingBean
+
+	在上下文中没有类型为 `JpaRepositoryFactoryBean` 的 bean 或 `JpaRepositoryConfigExtension`
+
+- @ConditionalOnProperty
+
+	标准的 application.properties 文件必须包含一个名为`spring.data.jpa.repositories.enabled` 的属性，值为true
+
+此外，配置将在 `HibernateJpaAutoConfiguration` 之后运行（如果后者被引用）。
+
+## 结论
+
+我希望我展示 Spring Boot starter 不是魔术。下周加入我们，做一个简单的案例研究。
+

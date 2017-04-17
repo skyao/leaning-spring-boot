@@ -10,7 +10,7 @@
 - [他的blog](https://blog.frankel.ch)
 - [他的个人介绍](https://blog.frankel.ch/me/)
 
-
+> PS: 这篇文章适合入门，因此翻译了一遍。
 
 
 
